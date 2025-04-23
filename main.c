@@ -4,13 +4,16 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #define NUM_CHAIRS 3
 #define DEFAULT_NUM_STUDENTS 5
 
 int isNumber(char number[]);
 int string2number(char number[]);
-void* ta();
+int isWaiting( int student_id );
+void* ta( void* arg );
+void* student( void* student_id );
 
 sem_t students_semaphore;
 sem_t ta_semaphore;
@@ -22,16 +25,39 @@ int next_seat_position = 0;
 int next_teaching_position = 0;
 int ta_sleeping_flag = 0; // 0 = TA está acordado, 1 = TA está dormindo
 
-int main() {
-    char number[5];
-    printf("Enter a number: ");
-    scanf("%4s", number);
-    int result = string2number(number);
-    if (result != -1) {
-        printf("The number is: %d\n", result);
+int main(int argc, char* argv[]) {
+    int i;
+    int student_num;
+
+    if (argc > 1) {
+        student_num = string2number(argv[1]);
+        if (student_num == -1) {
+            printf("Número de estudantes inválido!\n");
+            return 1;
+        }
     } else {
-        printf("Error converting string to number.\n");
+        student_num = DEFAULT_NUM_STUDENTS;
     }
+
+    int student_ids[student_num];
+    pthread_t students[student_num];
+    pthread_t ta;
+
+    sem_init(&students_semaphore, 0, 0); 
+    sem_init(&ta_semaphore, 0, 1); 
+
+    pthread_mutex_init(&mutex_thread, NULL);
+    pthread_create(&ta, NULL, ta, NULL);
+    for (i = 0; i < student_num; i++) {
+        student_ids[i] = i + 1;
+        pthread_create(&students[i], NULL, student, (void*) &student_ids[i]);
+    }
+
+    pthread_join(ta, NULL);
+    for (i = 0; i < student_num; i++) {
+        pthread_join(students[i], NULL);
+    }
+
     return 0;
 }
 
@@ -53,7 +79,14 @@ int string2number(char number[]) {
     }
 }
 
-void* ta() {
+int isWaiting( int student_id ) {
+    for(int i = 0; i < 3; i++) {
+        if ( waiting_room_chairs[i] == student_id ) { return 1; } 
+    }
+    return 0; 
+}
+
+void* ta( void* arg ) {
     printf("Verificando se há estudantes...\n");
 
     while(1) {
@@ -85,6 +118,38 @@ void* ta() {
                 ta_sleeping_flag = 1; // Coloca o TA para dormir
                 printf("TA está dormindo...\n"); 
             }
+        }
+    }
+}
+
+void* student( void* student_id) {
+    int id_student = *(int*)student_id;
+
+    while(1) {
+        if ( isWaiting( id_student ) == 1 ) { continue; }
+
+        int time = rand() % 5; // Tempo de espera aleatório entre 0 e 4
+        printf("Estudante %d está programando por %d segundos...\n", id_student, time);
+        sleep(time);
+
+        pthread_mutex_lock(&mutex_thread); 
+
+        if ( num_students_waiting < NUM_CHAIRS) {
+            waiting_room_chairs[next_seat_position] = id_student;
+            num_students_waiting++;
+
+            printf("Estudante %d entrou na sala de espera!\n", id_student);
+            printf("Número de estudantes esperando: %d\n\n", num_students_waiting);
+
+            next_seat_position = (next_seat_position + 1) % NUM_CHAIRS;
+            pthread_mutex_unlock(&mutex_thread);
+
+            // Acorda o TA
+            sem_post(&students_semaphore);
+            sem_wait(&ta_semaphore); 
+        } else {
+            pthread_mutex_unlock(&mutex_thread);
+            printf("Estudante %d não conseguiu entrar na sala de espera!\n\n", id_student);
         }
     }
 }
