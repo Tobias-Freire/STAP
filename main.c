@@ -41,19 +41,24 @@ int main(int argc, char* argv[]) {
 
     int student_ids[student_num];
     pthread_t students[student_num];
-    pthread_t ta;
+    pthread_t ta_thread;
 
     sem_init(&students_semaphore, 0, 0); 
     sem_init(&ta_semaphore, 0, 1); 
 
     pthread_mutex_init(&mutex_thread, NULL);
-    pthread_create(&ta, NULL, ta, NULL);
+    pthread_create(&ta_thread, NULL, ta, NULL);
     for (i = 0; i < student_num; i++) {
-        student_ids[i] = i + 1;
-        pthread_create(&students[i], NULL, student, (void*) &student_ids[i]);
+        int* student_id = malloc(sizeof(int));
+        if (student_id == NULL) {
+            perror("Erro ao alocar memória");
+            exit(1);
+        }
+        *student_id = i + 1;
+        pthread_create(&students[i], NULL, student, (void*) student_id);
     }
 
-    pthread_join(ta, NULL);
+    pthread_join(ta_thread, NULL);
     for (i = 0; i < student_num; i++) {
         pthread_join(students[i], NULL);
     }
@@ -124,6 +129,7 @@ void* ta( void* arg ) {
 
 void* student( void* student_id) {
     int id_student = *(int*)student_id;
+    free(student_id);
 
     while(1) {
         if ( isWaiting( id_student ) == 1 ) { continue; }
