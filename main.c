@@ -9,55 +9,72 @@
 #define NUM_CHAIRS 3
 #define DEFAULT_NUM_STUDENTS 5
 
+//Prototipos---------------------->
+//Validacao entrada do usuario:
 int isNumber(char number[]);
 int string2number(char number[]);
+
+//Verificacao do estado da sala de espera:
 int isWaiting(int student_id);
+
+//Tratamento das threads TA e estudantes.
 void* ta(void* arg);
 void* student(void* student_id);
+//<--------------------------------
 
+//TRATAMENTO DE CONDICAO DE CORRIDA!!!
+//Criacao de semaforos e mutex para garantir sincronizacao entre as threads!!!
 sem_t students_semaphore;
 sem_t ta_semaphore;
 pthread_mutex_t mutex_thread;
 
+//Declarando variaveis do problema STAP, como o numero de cadeiras, estudantes em espera e etc.!!! 
 int waiting_room_chairs[NUM_CHAIRS];
 int num_students_waiting = 0;
 int next_seat_position = 0;
 int next_teaching_position = 0;
-int ta_sleeping_flag = 0;
-int students_served = 0;
+int ta_sleeping_flag = 0;//Diz se o TA ta dormindo ou nao.
+int students_served = 0;//Marca os estudantes que ja foram atendidos.
 int total_students = 0;
-int finished = 0;  //flag para indicar que todos os estudantes foram atendidos e finalizar o programa.
+int finished = 0;  //Flag para indicar que todos os estudantes foram atendidos e finalizar o programa.
 
 int main(int argc, char* argv[]) {
     int student_num;
 
+    //Verificando se o numero de estudantes passado como argumento na hora de rodar o .exec eh valido ou nao!!! 
     if (argc > 1) {
-        student_num = string2number(argv[1]);
+        student_num = string2number(argv[1]);//Conversao do arg passado como string para inteiro. Se o arg nao for um numero, a funcao string2number retorna -1.
         if (student_num == -1) {
-            printf("Número de estudantes inválido!\n");
+            printf("Numero de estudantes invalido!\n");
             return 1;
         }
     } else {
         student_num = DEFAULT_NUM_STUDENTS;
     }
 
+    //Salvando o num. total de estudantes na variavel global 'total_students'.
     total_students = student_num;
 
-    pthread_t students[student_num];
-    pthread_t ta_thread;
+    //Criacao das variaveis onde serao armazenadas informacoes da thread. Servem meio que como identificadores das threads!!!
+    pthread_t students[student_num];//Estudantes
+    pthread_t ta_thread;//TA
 
+    //Inicializacao dos semaforos e mutex!!!
     sem_init(&students_semaphore, 0, 0); 
     sem_init(&ta_semaphore, 0, 1); 
     pthread_mutex_init(&mutex_thread, NULL);
 
+    //Criacao da thread do TA!!!
     pthread_create(&ta_thread, NULL, ta, NULL);
 
+    //Criacao das threads dos estudantes!!!
     for (int i = 0; i < student_num; i++) {
-        int* student_id = malloc(sizeof(int));
+        int* student_id = malloc(sizeof(int));//Usando o malloc para armazenar o ID dos estudantes, pois a funcao pthread_create precisa receber um void* como argumento.
         *student_id = i + 1;
-        pthread_create(&students[i], NULL, student, (void*) student_id);
+        pthread_create(&students[i], NULL, student, (void*) student_id);//(void*) student_id: argumento passado para a funcao student(), para que cada estudante tenha seu ID proprio.
     }
 
+    //Basicamente o wait() para processos, soh que para threads. Ou seja,o programa espera a thread terminar o que esta fazendo!!!
     pthread_join(ta_thread, NULL);
 
     for (int i = 0; i < student_num; i++) {
@@ -67,6 +84,7 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+//Verifica se a string number contem apenas numeros validos positivos!!!
 int isNumber(char number[]) {
     int size = strlen(number);
     for (int i = 0; i < size; i++) {
@@ -75,10 +93,12 @@ int isNumber(char number[]) {
     return 1;
 }
 
+//Converte string para inteiro!!!
 int string2number(char number[]) {
-    return isNumber(number) ? atoi(number) : -1;
+    return isNumber(number) ? atoi(number) : -1;//atoi: ASCII to Interger.
 }
 
+//Verifica se determinado estudante esta sentado na sala de espera!!!
 int isWaiting(int student_id) {
     for (int i = 0; i < NUM_CHAIRS; i++) {
         if (waiting_room_chairs[i] == student_id) return 1;
@@ -87,7 +107,7 @@ int isWaiting(int student_id) {
 }
 
 void* ta(void* arg) {
-    printf("[TA] Iniciando. Verificando se há estudantes...\n");
+    printf("[TA] Iniciando. Verificando se ha estudantes...\n");
 
     while (students_served < total_students) {
         if (num_students_waiting > 0) {
@@ -110,7 +130,7 @@ void* ta(void* arg) {
             sem_post(&ta_semaphore);
         } else {
             if (!ta_sleeping_flag) {
-                printf("[TA] Não há estudantes esperando. TA foi dormir.\n");
+                printf("[TA] Nao ha estudantes esperando. TA foi dormir.\n");
                 ta_sleeping_flag = 1;
             }
             usleep(100000); // Evita busy-wait/deixa o TA dormindo um pouco entre as verificações, sem travar o processador.
@@ -142,7 +162,7 @@ void* student(void* student_id) {
         if (isWaiting(id_student)) continue;
 
         int time = (rand() % 5) + 1;
-        printf("[Estudante %d] Está programando por %d segundos...\n", id_student, time);
+        printf("[Estudante %d] Esta programando por %d segundos...\n", id_student, time);
         sleep(time);
 
         pthread_mutex_lock(&mutex_thread);
@@ -164,7 +184,7 @@ void* student(void* student_id) {
             sem_wait(&ta_semaphore);
         } else {
             pthread_mutex_unlock(&mutex_thread);
-            printf("[Estudante %d] Sala cheia! Voltará depois...\n", id_student);
+            printf("[Estudante %d] Sala cheia! Voltara depois...\n", id_student);
         }
     }
 
