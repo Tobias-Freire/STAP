@@ -159,30 +159,31 @@ void* ta(void* arg) {
 }
 
 void* student(void* student_id) {
-    int id_student = *(int*)student_id;
-    free(student_id);
+    int id_student = *(int*)student_id; // conversão para inteiro
+    free(student_id); // memória alocada para id do estudante é liberada
 
     while (1) {
-        pthread_mutex_lock(&mutex_thread);
-        //Faz o estudante sair do loop quando o atendimento acabar.
+        pthread_mutex_lock(&mutex_thread); // mutex para evitar condição de corrida
         if (finished) {
             pthread_mutex_unlock(&mutex_thread);
-            break;
+            break; //Faz o estudante sair do loop quando o atendimento acabar.
         }
-        pthread_mutex_unlock(&mutex_thread);
+        pthread_mutex_unlock(&mutex_thread); // libera o mutex
 
         if (isWaiting(id_student)) continue;
 
-        int time = (rand() % 5) + 1;
+        // Simula o tempo que o estudante leva para programar.
+        int time = (rand() % 5) + 1; 
         printf("[Estudante %d] Esta programando por %d segundos...\n", id_student, time);
         sleep(time);
 
-        pthread_mutex_lock(&mutex_thread);
+        pthread_mutex_lock(&mutex_thread); 
         if (finished) {
             pthread_mutex_unlock(&mutex_thread);
             break;
         }
-
+        
+        // Verifica se há espaço na sala de espera
         if (num_students_waiting < NUM_CHAIRS) {
             waiting_room_chairs[next_seat_position] = id_student;
             num_students_waiting++;
@@ -190,16 +191,17 @@ void* student(void* student_id) {
                 id_student, next_seat_position + 1, num_students_waiting, NUM_CHAIRS);
             next_seat_position = (next_seat_position + 1) % NUM_CHAIRS;
 
-            pthread_mutex_unlock(&mutex_thread);
+            pthread_mutex_unlock(&mutex_thread); // libera o mutex
 
-            sem_post(&students_semaphore);
-            sem_wait(&ta_semaphore);
-        } else {
+            sem_post(&students_semaphore); // sinaliza que há um estudante esperando
+            sem_wait(&ta_semaphore); // espera ser atendido
+        } else { // Sala cheia
             pthread_mutex_unlock(&mutex_thread);
             printf("[Estudante %d] Sala cheia! Voltara depois...\n", id_student);
         }
     }
 
+    // Estudante sai do sistema
     printf("[Estudante %d] Saiu do sistema.\n", id_student);
     return NULL;
 }
