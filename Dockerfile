@@ -13,5 +13,5 @@ RUN make
 # Define o número padrão de estudantes como argumento
 ARG NUM_STUDENTS=5
 
-# Executa o programa com o número de estudantes (pode ser sobrescrito com `--build-arg`)
+# Executa o programa com o número de estudantes 
 CMD ["./main", "5"]
