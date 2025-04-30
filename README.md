@@ -13,3 +13,21 @@ Um assistente de ensino (TA - Teaching Assistant) ajuda alunos em um laboratóri
 - Se todas as cadeiras estiverem ocupadas, o aluno vai embora sem receber ajuda.
 
 - O TA atende os alunos um por um, e volta a dormir quando não há mais alunos esperando.
+
+
+## Como rodar
+> Pré-requisitos: Compilador gcc e Docker instalados devidamente
+
+### Com Makefile
+- Rode o comando `make`para compilar o programa
+
+- Rode o comando `./main`para rodar o programa. Você pode passar o número de estudantes como argumento, exemplo: `./main 3`
+
+- Para limpar os arquivos gerados no build, rode `make clean`
+
+### Com Docker
+- Rode o comando `sudo docker build -t stap .` para fazer o build e gerar a imagem do container
+
+- Rode o comando `sudo docker run --rm stap` para rodar o container. Você pode passar o número de estudantes como argumento, exemplo: `sudo docker run --rm stap ./main 3`
+
+>**Nota**: Ao rodar com Makefile, os prints no terminal ocorrem de forma dinâmica, de modo que se pode ver o que está acontecendo em tempo real. Ao rodar com Docker, os prints somente são mostrados no terminal ao final da execução.
