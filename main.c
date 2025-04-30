@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <time.h>
 
 #define NUM_CHAIRS 3
 #define DEFAULT_NUM_STUDENTS 5
@@ -30,6 +31,7 @@ pthread_mutex_t mutex_thread;
 
 //Declarando variaveis do problema STAP, como o numero de cadeiras, estudantes em espera e etc.!!! 
 int waiting_room_chairs[NUM_CHAIRS];
+int total_teaching_time = 0;
 int num_students_waiting = 0;
 int next_seat_position = 0;
 int next_teaching_position = 0;
@@ -39,6 +41,8 @@ int total_students = 0;
 int finished = 0;  //Flag para indicar que todos os estudantes foram atendidos e finalizar o programa.
 
 int main(int argc, char* argv[]) {
+    clock_t start_time = clock();
+
     int student_num;
 
     //Verificando se o numero de estudantes passado como argumento na hora de rodar o .exec eh valido ou nao!!! 
@@ -81,6 +85,13 @@ int main(int argc, char* argv[]) {
         pthread_join(students[i], NULL);
     }
 
+    clock_t end_time = clock();  
+    double total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("\n[METRICA] Tempo total de execução: %.2f segundos\n", total_time);
+
+    double avg_teaching_time = (double) total_teaching_time / total_students;
+    printf("[METRICA] Tempo médio de atendimento: %.2f segundos\n", avg_teaching_time);
+
     return 0;
 }
 
@@ -119,6 +130,7 @@ void* ta(void* arg) {
             int teaching_time = (rand() % 5) + 1;
             printf("[TA] Vai ajudar o estudante %d por %d segundos...\n", student_id, teaching_time);
             sleep(teaching_time);
+            total_teaching_time += teaching_time;
 
             printf("[TA] Estudante %d terminou de ser atendido.\n", student_id);
             waiting_room_chairs[next_teaching_position] = 0;

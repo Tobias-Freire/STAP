@@ -31,3 +31,9 @@ Um assistente de ensino (TA - Teaching Assistant) ajuda alunos em um laboratóri
 - Rode o comando `sudo docker run --rm stap` para rodar o container. Você pode passar o número de estudantes como argumento, exemplo: `sudo docker run --rm stap ./main 3`
 
 >**Nota**: Ao rodar com Makefile, os prints no terminal ocorrem de forma dinâmica, de modo que se pode ver o que está acontecendo em tempo real. Ao rodar com Docker, os prints somente são mostrados no terminal ao final da execução.
+
+## Métricas
+> Feitas rodando o programa com Makefile
+- Com 3 estudantes: tempo total de execução foi 0.21 segundos, enquanto tempo médio de atendimento foi 1.67 segundos
+- Com 5 estudantes: tempo total de execução foi 0.21 segundos, enquanto o tempo médio de atendimento foi 2.20 segundos
+- Com 7 estudantes: tempo total de execução foi 0.21 segundos, enquanto o tempo médio de atendimento foi 3.57 segundos
